@@ -1,5 +1,7 @@
 # Oura Ring MCP Server
 
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
 Connect your Oura Ring health data to Claude via the [Model Context Protocol](https://modelcontextprotocol.io).
 
 ## Requirements
@@ -81,3 +83,7 @@ All collection tools accept optional `start_date` / `end_date` (YYYY-MM-DD) and 
 | No data returned | Make sure your ring has synced in the Oura app recently |
 | SpO2 / Stress empty | Requires Oura Ring Generation 3 or later |
 | Rate limit exceeded | Wait a moment and retry |
+
+## License
+
+[MIT](LICENSE) © Jose Leos
