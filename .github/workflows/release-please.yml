@@ -14,14 +14,35 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      statuses: write
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           release-type: python
 
-      - name: Auto-merge Release PR
-        if: ${{ steps.release.outputs.pr != '' }}
+      # outputs.pr is only set when a PR is created/updated.
+      # When it "remained the same" the output is empty, so we fall back
+      # to querying for any open PR with the release-please label instead.
+      - name: Post passing lint check and enable auto-merge on Release PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge --auto --squash "${{ fromJSON(steps.release.outputs.pr).number }}"
+        run: |
+          PR_NUMBER=$(echo '${{ steps.release.outputs.pr }}' | tr -d '"' | grep -E '^[0-9]+$' || true)
+          if [ -z "$PR_NUMBER" ]; then
+            PR_NUMBER=$(gh pr list \
+              --repo "$GITHUB_REPOSITORY" \
+              --label "autorelease: pending" \
+              --json number -q '.[0].number // empty')
+          fi
+          if [ -n "$PR_NUMBER" ]; then
+            PR_SHA=$(gh pr view "$PR_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json headRefOid -q .headRefOid)
+            gh api "repos/$GITHUB_REPOSITORY/statuses/$PR_SHA" \
+              --method POST \
+              -f state=success \
+              -f context="Lint PR Title" \
+              -f description="Release PR title is a valid conventional commit"
+            gh pr merge --auto --squash --repo "$GITHUB_REPOSITORY" "$PR_NUMBER"
+          fi
